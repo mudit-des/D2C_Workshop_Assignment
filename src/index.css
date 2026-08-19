@@ -1,0 +1,329 @@
+@import "tailwindcss";
+
+@import "@acko/tokens/tokens.css";
+@import "@acko/tokens/theme.css";
+
+@import "@acko/css/accordion.css";
+@import "@acko/css/alert.css";
+@import "@acko/css/avatar.css";
+@import "@acko/css/badge.css";
+@import "@acko/css/breadcrumb.css";
+@import "@acko/css/button.css";
+@import "@acko/css/calendar.css";
+@import "@acko/css/card.css";
+@import "@acko/css/checkbox.css";
+@import "@acko/css/drawer.css";
+@import "@acko/css/dropdown.css";
+@import "@acko/css/field.css";
+@import "@acko/css/input-group.css";
+@import "@acko/css/label.css";
+@import "@acko/css/navigation-wizard.css";
+@import "@acko/css/pagination.css";
+@import "@acko/css/progress.css";
+@import "@acko/css/radio.css";
+@import "@acko/css/scroll-area.css";
+@import "@acko/css/separator.css";
+@import "@acko/css/skeleton.css";
+@import "@acko/css/surface.css";
+@import "@acko/css/switch.css";
+@import "@acko/css/table.css";
+@import "@acko/css/tabs.css";
+@import "@acko/css/text-input.css";
+@import "@acko/css/textarea.css";
+@import "@acko/css/toggle.css";
+@import "@acko/css/tooltip.css";
+@import "@acko/css/typography.css";
+
+body {
+  font-family: "Euclid Circular B", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  background-color: var(--surfaceBase);
+}
+
+/*
+ * Package compatibility bridges only (not Figma visual overrides).
+ * @acko/css@3 expects tokens that @acko/tokens@2.0.6 omits or name-collides:
+ * - --borderControl: primitive WIDTH (2px) overwritten by semantic COLOR →
+ *   checkbox/radio `border: var(--borderControl) solid …` becomes invalid.
+ * - --radius5xl used by @acko/card, missing in tokens 2.0.6.
+ * - checkbox selected gradient stops missing in tokens 2.0.6.
+ * - package --checkboxBorder (#efeff0) is invisible on white card fills.
+ */
+:root {
+  --borderWidthControl: 2px;
+  --radius5xl: 24px;
+  --checkboxBorderSelectedTop: var(--fillBrand);
+  --checkboxBorderSelectedBottom: var(--fillBrand);
+  --checkboxBorder: var(--borderDefault);
+  --checkboxBorderHover: var(--borderDefault);
+  --members-flow-max-width: 480px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --members-flow-max-width: 640px;
+  }
+}
+
+/* Repair control borders so ACKO Checkbox / CheckboxRow render correctly */
+.acko-checkbox-box,
+.acko-cb-row .acko-checkbox-box {
+  border: var(--borderWidthControl) solid var(--checkboxBorder);
+}
+
+.acko-checkbox-checked:not(.acko-checkbox-disabled):not(.acko-checkbox-error)
+  .acko-checkbox-box,
+.acko-checkbox-indeterminate:not(.acko-checkbox-disabled):not(.acko-checkbox-error)
+  .acko-checkbox-box,
+.acko-cb-row-checked:not(.acko-cb-row-error) .acko-checkbox-box,
+.acko-cb-row-indeterminate:not(.acko-cb-row-error) .acko-checkbox-box {
+  border: var(--borderWidthControl) solid transparent;
+}
+
+/* layout.md — section container */
+.section-container {
+  width: 100%;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@media (min-width: 600px) {
+  .section-container {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-container {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* Soft hero wash (structural atmosphere) — fade uses surface token */
+.members-hero-wash {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 216px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.members-hero-wash__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.members-hero-wash__fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 64px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--surfaceBase) 100%
+  );
+}
+
+/* Review screen leftovers (still used by ReviewScreen) */
+.review-hero-wash {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 216px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.review-hero-wash__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.review-hero-wash__fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 64px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--surfaceBase) 100%
+  );
+}
+
+.review-top-chrome {
+  background-color: transparent;
+}
+
+.review-card-strip {
+  background-color: var(--fillBrandSubtle);
+}
+
+.members-journey-progress.acko-progress {
+  width: 100%;
+  gap: 0;
+}
+
+.members-journey-progress .acko-progress-track {
+  height: 8px;
+  border-radius: var(--radiusFull);
+  background-color: var(--borderSubtle);
+}
+
+.members-journey-progress .acko-progress-bar {
+  border-radius: var(--radiusFull);
+}
+
+.members-child-row {
+  border-top: var(--borderHairline) solid var(--borderSoft);
+}
+
+/* Child age field — opens Drawer; mirrors Dropdown shell tokens */
+.members-age-trigger {
+  cursor: pointer;
+  transition: border-color var(--durationBase, 150ms) var(--easingStandard, ease);
+}
+
+.members-age-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--borderFocus);
+}
+
+/*
+ * Age bottom sheets: no package header (avoids title divider + close X).
+ * Titles live in the sheet body; drawers use dismissible={false}.
+ */
+.members-flow-column {
+  max-width: var(--members-flow-max-width);
+}
+
+/*
+ * Drawer portals to the viewport. Cap the sheet to the same column as the
+ * purchase flow so it never outgrows the screen it opened on.
+ */
+.members-age-sheet.acko-drawer-bottom {
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: var(--members-flow-max-width);
+  margin-inline: auto;
+}
+
+/*
+ * Age sheet + overlay motion (acko-motion-system).
+ * motion.surface.open: 550ms / 33f, ease-out, velocity 100→0, out 50% in 40%
+ * motion.surface.close: 400ms / 24f, ease-in, velocity 0→100, out 40% in 50%
+ * Overlay fades with the surface; ACKO --surfaceOverlay already ~40%.
+ * CSS ease-out / ease-in approximate AE influence; durations are exact.
+ */
+.acko-drawer-root:has(.members-age-sheet) .acko-drawer-backdrop {
+  opacity: 0;
+  transition: opacity 550ms ease-out;
+}
+
+.acko-drawer-root:has(.members-age-sheet-entered) .acko-drawer-backdrop {
+  opacity: 1;
+}
+
+.acko-drawer-root:has(.members-age-sheet-closing) .acko-drawer-backdrop {
+  opacity: 0;
+  transition: opacity 400ms ease-in;
+}
+
+.acko-drawer-open .members-age-sheet.acko-drawer {
+  transition: transform 550ms ease-out;
+}
+
+.acko-drawer-open .members-age-sheet.acko-drawer-bottom {
+  transform: translateY(100%);
+}
+
+.acko-drawer-open .members-age-sheet-entered.acko-drawer-bottom {
+  transform: translate(0);
+}
+
+.acko-drawer-open .members-age-sheet-closing.acko-drawer-bottom {
+  transform: translateY(100%);
+  transition: transform 400ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acko-drawer-root:has(.members-age-sheet) .acko-drawer-backdrop {
+    transition: opacity 160ms ease-out;
+  }
+
+  .acko-drawer-root:has(.members-age-sheet-closing) .acko-drawer-backdrop {
+    transition: opacity 160ms ease-in;
+  }
+
+  .acko-drawer-open .members-age-sheet.acko-drawer-bottom,
+  .acko-drawer-open .members-age-sheet-entered.acko-drawer-bottom,
+  .acko-drawer-open .members-age-sheet-closing.acko-drawer-bottom {
+    transform: none;
+    transition: none;
+  }
+}
+
+.members-age-sheet.acko-drawer .acko-drawer-header {
+  display: none !important;
+  border-bottom: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.members-age-sheet.acko-drawer .acko-drawer-footer {
+  border-top: none !important;
+}
+
+.members-age-sheet-body.acko-drawer-body {
+  padding-top: var(--spacing12) !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.members-age-sheet-title {
+  margin: 0;
+  padding: 0 var(--spacing20) var(--spacing12);
+  color: var(--textPrimary);
+  font-family: var(--typefaceFamily);
+  font-size: var(--fontBodyLgSize);
+  font-weight: var(--fontHeadingSmWeight);
+  letter-spacing: var(--fontBodyLgSpacing);
+  line-height: var(--fontBodyLgLine);
+}
+
+.members-age-sheet-desc {
+  margin: 0;
+  padding: 0 var(--spacing20) var(--spacing12);
+  color: var(--textSecondary);
+  font-family: var(--typefaceFamily);
+  font-size: var(--fontBodySmSize);
+  font-weight: var(--fontBodySmWeight);
+  line-height: var(--fontBodySmLine);
+}
+
+/* ui-polish.md — sticky bottom CTA + safe area */
+.bottom-cta {
+  box-shadow: var(--elevationE2);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
