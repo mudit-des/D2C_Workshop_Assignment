@@ -5,8 +5,8 @@ import { Drawer } from "@acko/drawer";
 import { ChevronDown, Tick } from "@acko/icons";
 import { PurchaseFlowChrome } from "./PurchaseFlowChrome";
 import {
-  ELDER_KEYS_VS_SELF,
   MEMBER_LABELS,
+  PARENT_KEYS_VS_SELF,
   type CoveredSelection,
   type MemberKey,
 } from "./memberTypes";
@@ -109,10 +109,14 @@ function useAgeSheetMotion(open: boolean, onClose: () => void) {
 const ADULT_MIN_AGE = 18;
 const ADULT_MAX_AGE = 100;
 
-function adultAgeOptions(minAge = ADULT_MIN_AGE) {
+function adultAgeOptions(
+  minAge = ADULT_MIN_AGE,
+  maxAge = ADULT_MAX_AGE,
+) {
   const start = Math.max(ADULT_MIN_AGE, minAge);
+  const end = Math.min(ADULT_MAX_AGE, maxAge);
   const options: { value: string; label: string }[] = [];
-  for (let age = start; age <= ADULT_MAX_AGE; age += 1) {
+  for (let age = start; age <= end; age += 1) {
     options.push({ value: String(age), label: String(age) });
   }
   return options;
@@ -126,6 +130,109 @@ const CHILD_AGE_RANGES = [
 
 type ChildAgeValue = (typeof CHILD_AGE_RANGES)[number]["value"] | "";
 
+const CHILD_RANGE_YEARS: Record<
+  Exclude<ChildAgeValue, "">,
+  { min: number; max: number }
+> = {
+  "3-11-months": { min: 0, max: 1 },
+  "1-18-years": { min: 1, max: 18 },
+  "19-25-years": { min: 19, max: 25 },
+};
+
+/** Adults a child must not be older than */
+const CHILD_VS_ADULT_KEYS: MemberKey[] = [
+  "self",
+  "spouse",
+  "father",
+  "mother",
+];
+
+export class AgeRelationshipError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AgeRelationshipError";
+  }
+}
+
+function comparisonAdults(
+  selection: CoveredSelection,
+  members: MemberAges["members"],
+): { key: MemberKey; age: number }[] {
+  const result: { key: MemberKey; age: number }[] = [];
+  for (const key of CHILD_VS_ADULT_KEYS) {
+    if (!selection.members[key]) continue;
+    const age = parseAge(members[key]);
+    if (age != null) {
+      result.push({ key, age });
+    }
+  }
+  return result;
+}
+
+function collectAgeErrors(
+  selection: CoveredSelection,
+  ages: MemberAges,
+): {
+  adult: Partial<Record<MemberKey, string>>;
+  children: Array<string | undefined>;
+} {
+  const adult: Partial<Record<MemberKey, string>> = {};
+  const children: Array<string | undefined> = [];
+  const selfAge = parseAge(ages.members.self);
+
+  if (selfAge != null) {
+    const olderThanParents: { key: MemberKey; age: number }[] = [];
+    for (const key of PARENT_KEYS_VS_SELF) {
+      if (!selection.members[key]) continue;
+      const parentAge = parseAge(ages.members[key]);
+      if (parentAge != null && selfAge > parentAge) {
+        olderThanParents.push({ key, age: parentAge });
+      }
+    }
+    if (olderThanParents.length > 0) {
+      const youngestParent = olderThanParents.reduce((min, entry) =>
+        entry.age < min.age ? entry : min,
+      );
+      adult.self =
+        `Self cannot be older than ${MEMBER_LABELS[youngestParent.key]} (${youngestParent.age})`;
+    }
+  }
+
+  const adults = comparisonAdults(selection, ages.members);
+  ages.children.forEach((value, index) => {
+    if (!value) return;
+    const bounds = CHILD_RANGE_YEARS[value];
+    const olderThan = adults.filter((entry) => bounds.max > entry.age);
+    if (olderThan.length === 0) return;
+    const youngest = olderThan.reduce((min, entry) =>
+      entry.age < min.age ? entry : min,
+    );
+    const label =
+      selection.childCount === 1 ? "Child" : `Child ${index + 1}`;
+    children[index] =
+      `${label} cannot be older than ${MEMBER_LABELS[youngest.key]} (${youngest.age})`;
+  });
+
+  return { adult, children };
+}
+
+function assertAgeRelationships(
+  selection: CoveredSelection,
+  ages: MemberAges,
+): void {
+  const errors = collectAgeErrors(selection, ages);
+  const firstAdult = (Object.keys(errors.adult) as MemberKey[]).find(
+    (key) => errors.adult[key],
+  );
+  const firstChild = errors.children.find((message) => Boolean(message));
+  const message = firstAdult
+    ? errors.adult[firstAdult]
+    : firstChild;
+  if (message) {
+    throw new AgeRelationshipError(message);
+  }
+}
+
 export type MemberAges = {
   members: Partial<Record<MemberKey, string>>;
   children: ChildAgeValue[];
@@ -136,7 +243,7 @@ type AgeRow =
   | { kind: "child"; index: number; label: string };
 
 type SheetState =
-  | { type: "adult"; key: MemberKey; minAge: number }
+  | { type: "adult"; key: MemberKey; minAge: number; maxAge: number }
   | { type: "child"; index: number }
   | null;
 
@@ -151,10 +258,10 @@ function buildAgeRows(selection: CoveredSelection): AgeRow[] {
     "motherInLaw",
   ];
 
-  for (const key of ["self", "spouse"] as MemberKey[]) {
-    if (selection.members[key]) {
-      rows.push({ kind: "adult", key, label: MEMBER_LABELS[key] });
-    }
+  rows.push({ kind: "adult", key: "self", label: MEMBER_LABELS.self });
+
+  if (selection.members.spouse) {
+    rows.push({ kind: "adult", key: "spouse", label: MEMBER_LABELS.spouse });
   }
 
   for (let i = 0; i < selection.childCount; i += 1) {
@@ -185,6 +292,37 @@ function parseAge(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function maxSelfAgeYears(
+  selection: CoveredSelection,
+  members: MemberAges["members"],
+): number {
+  let maxAge = ADULT_MAX_AGE;
+  for (const key of PARENT_KEYS_VS_SELF) {
+    if (!selection.members[key]) continue;
+    const parentAge = parseAge(members[key]);
+    if (parentAge != null) {
+      maxAge = Math.min(maxAge, parentAge);
+    }
+  }
+  return maxAge;
+}
+function maxAllowedChildYears(
+  selection: CoveredSelection,
+  members: MemberAges["members"],
+): number | null {
+  const adults = comparisonAdults(selection, members);
+  if (adults.length === 0) return null;
+  return Math.min(...adults.map((entry) => entry.age));
+}
+
+function isChildRangeAllowed(
+  value: Exclude<ChildAgeValue, "">,
+  maxAgeYears: number | null,
+): boolean {
+  if (maxAgeYears == null) return true;
+  return CHILD_RANGE_YEARS[value].max <= maxAgeYears;
+}
+
 function AgeFieldTrigger({
   display,
   placeholder,
@@ -213,11 +351,11 @@ function AgeFieldTrigger({
     >
       <span className="min-w-0 flex-1">
         {display ? (
-          <Typography variant="body-md" color="primary" as="span">
+          <Typography scale="base" color="primary" as="span">
             {display}
           </Typography>
         ) : (
-          <Typography variant="body-md" color="secondary" as="span">
+          <Typography scale="base" color="secondary" as="span">
             {placeholder}
           </Typography>
         )}
@@ -234,16 +372,21 @@ function EnterAgeDrawer({
   open,
   value,
   minAge,
+  maxAge,
   onClose,
   onSelect,
 }: {
   open: boolean;
   value: string;
   minAge: number;
+  maxAge: number;
   onClose: () => void;
   onSelect: (next: string) => void;
 }) {
-  const options = useMemo(() => adultAgeOptions(minAge), [minAge]);
+  const options = useMemo(
+    () => adultAgeOptions(minAge, maxAge),
+    [minAge, maxAge],
+  );
   const { drawerOpen, className } = useAgeSheetMotion(open, onClose);
 
   return (
@@ -257,7 +400,9 @@ function EnterAgeDrawer({
       className={className}
       bodyClassName="members-age-sheet-body"
     >
-      <p className="members-age-sheet-title">Enter age</p>
+      <Typography scale="lg" emphasis="bold" as="h2" className="members-age-sheet-title">
+        Enter age
+      </Typography>
       <div className="flex w-full flex-col" role="listbox" aria-label="Enter age">
         {options.map((option) => {
           const selected = value === option.value;
@@ -274,7 +419,7 @@ function EnterAgeDrawer({
               }}
             >
               <Typography
-                variant="body-md"
+                scale="base"
                 color={selected ? "brand" : "primary"}
                 className="min-w-0 flex-1"
               >
@@ -300,15 +445,20 @@ function EnterAgeDrawer({
 function SelectAgeRangeDrawer({
   open,
   value,
+  maxAgeYears,
   onClose,
   onSelect,
 }: {
   open: boolean;
   value: ChildAgeValue;
+  maxAgeYears: number | null;
   onClose: () => void;
   onSelect: (next: ChildAgeValue) => void;
 }) {
   const { drawerOpen, className } = useAgeSheetMotion(open, onClose);
+  const options = CHILD_AGE_RANGES.filter((option) =>
+    isChildRangeAllowed(option.value, maxAgeYears),
+  );
 
   return (
     <Drawer
@@ -321,16 +471,28 @@ function SelectAgeRangeDrawer({
       className={className}
       bodyClassName="members-age-sheet-body"
     >
-      <p className="members-age-sheet-title">Select age range</p>
-      <p className="members-age-sheet-desc">
+      <Typography scale="lg" emphasis="bold" as="h2" className="members-age-sheet-title">
+        Select age range
+      </Typography>
+      <Typography
+        scale="sm"
+        color="secondary"
+        className="members-age-sheet-desc"
+      >
         We cover children aged 3 months and above
-      </p>
+      </Typography>
       <div
         className="flex w-full flex-col"
         role="listbox"
         aria-label="Child age range"
       >
-        {CHILD_AGE_RANGES.map((option) => {
+        {options.length === 0 ? (
+          <Typography scale="sm" color="error" className="px-20 py-16">
+            No valid child age range. A child cannot be older than Self, Spouse,
+            Father, or Mother.
+          </Typography>
+        ) : null}
+        {options.map((option) => {
           const selected = value === option.value;
           return (
             <button
@@ -345,7 +507,8 @@ function SelectAgeRangeDrawer({
               }}
             >
               <Typography
-                variant="label-lg"
+                scale="sm"
+                emphasis="medium"
                 color={selected ? "brand" : "primary"}
                 className="min-w-0 flex-1"
               >
@@ -370,9 +533,11 @@ function SelectAgeRangeDrawer({
 }
 
 function emptyAges(selection: CoveredSelection, initial?: MemberAges): MemberAges {
-  const members: Partial<Record<MemberKey, string>> = {};
+  const members: Partial<Record<MemberKey, string>> = {
+    self: initial?.members.self ?? "",
+  };
   (Object.keys(selection.members) as MemberKey[]).forEach((key) => {
-    if (selection.members[key]) {
+    if (key !== "self" && selection.members[key]) {
       members[key] = initial?.members[key] ?? "";
     }
   });
@@ -395,28 +560,25 @@ export default function MemberAgesScreen({
   onContinue?: (ages: MemberAges) => void;
   initialAges?: MemberAges;
 }) {
-  const rows = useMemo(() => buildAgeRows(selection), [selection]);
+  const covered = useMemo(
+    () => ({ ...selection, members: { ...selection.members, self: true } }),
+    [selection],
+  );
+  const rows = useMemo(() => buildAgeRows(covered), [covered]);
   const [ages, setAges] = useState<MemberAges>(() =>
-    emptyAges(selection, initialAges),
+    emptyAges(covered, initialAges),
   );
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const selfAge = parseAge(ages.members.self);
-
-  const elderErrors = useMemo(() => {
-    const errors: Partial<Record<MemberKey, string>> = {};
-    if (selfAge == null) return errors;
-
-    for (const key of ELDER_KEYS_VS_SELF) {
-      if (!selection.members[key]) continue;
-      const elderAge = parseAge(ages.members[key]);
-      if (elderAge != null && elderAge < selfAge) {
-        errors[key] =
-          `${MEMBER_LABELS[key]} cannot be younger than Self (${selfAge})`;
-      }
-    }
-    return errors;
-  }, [ages.members, selection.members, selfAge]);
+  const relationshipErrors = useMemo(
+    () => collectAgeErrors(covered, ages),
+    [covered, ages],
+  );
+  const childMaxYears = useMemo(
+    () => maxAllowedChildYears(covered, ages.members),
+    [covered, ages.members],
+  );
 
   const allFilled = useMemo(() => {
     for (const row of rows) {
@@ -429,26 +591,16 @@ export default function MemberAgesScreen({
     return rows.length > 0;
   }, [ages, rows]);
 
-  const canSubmit = allFilled && Object.keys(elderErrors).length === 0;
+  const hasRelationshipError =
+    Object.keys(relationshipErrors.adult).length > 0 ||
+    relationshipErrors.children.some(Boolean);
+  const canSubmit = allFilled && !hasRelationshipError;
 
   const setAdultAge = (key: MemberKey, next: string) => {
-    setAges((prev) => {
-      const members = { ...prev.members, [key]: next };
-
-      if (key === "self") {
-        const newSelf = parseAge(next);
-        if (newSelf != null) {
-          for (const elderKey of ELDER_KEYS_VS_SELF) {
-            const elder = parseAge(members[elderKey]);
-            if (elder != null && elder < newSelf) {
-              members[elderKey] = "";
-            }
-          }
-        }
-      }
-
-      return { ...prev, members };
-    });
+    setAges((prev) => ({
+      ...prev,
+      members: { ...prev.members, [key]: next },
+    }));
   };
 
   const setChildAge = (index: number, value: ChildAgeValue) => {
@@ -462,6 +614,7 @@ export default function MemberAgesScreen({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
+    assertAgeRelationships(covered, ages);
     onContinue?.(ages);
   };
 
@@ -469,25 +622,30 @@ export default function MemberAgesScreen({
     <PurchaseFlowChrome progress={75} onBack={onBack}>
       <form className="relative z-10 flex flex-1 flex-col" onSubmit={handleSubmit}>
         <main className="section-container flex flex-1 flex-col gap-48 pb-24 pt-32">
-          <Typography variant="heading-xl" as="h1">
+          <Typography scale="2xl" emphasis="bold" as="h1">
             How old is everyone?
           </Typography>
 
           {rows.length === 0 ? (
-            <Typography variant="body-md" color="secondary">
+            <Typography scale="sm" color="secondary">
               No members selected. Go back and choose who to cover.
             </Typography>
           ) : (
             <div className="flex w-full flex-col gap-16">
               {rows.map((row) => {
-                const isElderVsSelf =
+                const isSelf = row.kind === "adult" && row.key === "self";
+                const isParentVsSelf =
                   row.kind === "adult" &&
-                  ELDER_KEYS_VS_SELF.includes(row.key) &&
-                  selection.members.self;
+                  PARENT_KEYS_VS_SELF.includes(row.key);
                 const minAge =
-                  isElderVsSelf && selfAge != null ? selfAge : ADULT_MIN_AGE;
+                  isParentVsSelf && selfAge != null ? selfAge : ADULT_MIN_AGE;
+                const maxAge = isSelf
+                  ? maxSelfAgeYears(covered, ages.members)
+                  : ADULT_MAX_AGE;
                 const error =
-                  row.kind === "adult" ? elderErrors[row.key] : undefined;
+                  row.kind === "adult"
+                    ? relationshipErrors.adult[row.key]
+                    : relationshipErrors.children[row.index];
 
                 if (row.kind === "adult") {
                   return (
@@ -497,7 +655,8 @@ export default function MemberAgesScreen({
                     >
                       <div className="flex w-full items-center justify-between gap-12">
                         <Typography
-                          variant="label-lg"
+                          scale="sm"
+                          emphasis="medium"
                           color="primary"
                           className="min-w-0 shrink-0"
                         >
@@ -515,12 +674,13 @@ export default function MemberAgesScreen({
                               type: "adult",
                               key: row.key,
                               minAge,
+                              maxAge,
                             })
                           }
                         />
                       </div>
                       {error ? (
-                        <Typography variant="caption" color="error">
+                        <Typography scale="xs" color="error">
                           {error}
                         </Typography>
                       ) : null}
@@ -531,25 +691,34 @@ export default function MemberAgesScreen({
                 return (
                   <div
                     key={`child-${row.index}`}
-                    className="flex w-full items-center justify-between gap-12"
+                    className="flex w-full flex-col gap-8"
                   >
-                    <Typography
-                      variant="label-lg"
-                      color="primary"
-                      className="min-w-0 shrink-0"
-                    >
-                      {row.label}
-                    </Typography>
-                    <AgeFieldTrigger
-                      display={childAgeLabel(ages.children[row.index] ?? "")}
-                      placeholder="Enter age"
-                      expanded={
-                        sheet?.type === "child" && sheet.index === row.index
-                      }
-                      onClick={() =>
-                        setSheet({ type: "child", index: row.index })
-                      }
-                    />
+                    <div className="flex w-full items-center justify-between gap-12">
+                      <Typography
+                        scale="sm"
+                        emphasis="medium"
+                        color="primary"
+                        className="min-w-0 shrink-0"
+                      >
+                        {row.label}
+                      </Typography>
+                      <AgeFieldTrigger
+                        display={childAgeLabel(ages.children[row.index] ?? "")}
+                        placeholder="Enter age"
+                        expanded={
+                          sheet?.type === "child" && sheet.index === row.index
+                        }
+                        invalid={Boolean(error)}
+                        onClick={() =>
+                          setSheet({ type: "child", index: row.index })
+                        }
+                      />
+                    </div>
+                    {error ? (
+                      <Typography scale="xs" color="error">
+                        {error}
+                      </Typography>
+                    ) : null}
                   </div>
                 );
               })}
@@ -578,6 +747,7 @@ export default function MemberAgesScreen({
           sheet?.type === "adult" ? (ages.members[sheet.key] ?? "") : ""
         }
         minAge={sheet?.type === "adult" ? sheet.minAge : ADULT_MIN_AGE}
+        maxAge={sheet?.type === "adult" ? sheet.maxAge : ADULT_MAX_AGE}
         onClose={() => setSheet(null)}
         onSelect={(next) => {
           if (sheet?.type === "adult") {
@@ -593,6 +763,7 @@ export default function MemberAgesScreen({
             ? (ages.children[sheet.index] ?? "")
             : ""
         }
+        maxAgeYears={childMaxYears}
         onClose={() => setSheet(null)}
         onSelect={(next) => {
           if (sheet?.type === "child") {

@@ -34,8 +34,44 @@
 @import "@acko/css/tooltip.css";
 @import "@acko/css/typography.css";
 
+@font-face {
+  font-family: "Euclid Circular B";
+  src: url("https://pub-c050457d48794d5bb9ffc2b4649de2c1.r2.dev/Euclid%20Font/EuclidCircularB-Regular.otf")
+    format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Euclid Circular B";
+  src: url("https://pub-c050457d48794d5bb9ffc2b4649de2c1.r2.dev/Euclid%20Font/EuclidCircularB-Medium.otf")
+    format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Euclid Circular B";
+  src: url("https://pub-c050457d48794d5bb9ffc2b4649de2c1.r2.dev/Euclid%20Font/EuclidCircularB-Semibold.otf")
+    format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Euclid Circular B";
+  src: url("https://pub-c050457d48794d5bb9ffc2b4649de2c1.r2.dev/Euclid%20Font/EuclidCircularB-Bold.otf")
+    format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
-  font-family: "Euclid Circular B", system-ui, sans-serif;
+  font-family: "Euclid Circular B", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
@@ -115,14 +151,10 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
-}
-
-.members-hero-wash__image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  background-image: url("/assets/mweb-hero-bg.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: top center;
 }
 
 .members-hero-wash__fade {
@@ -146,14 +178,10 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
-}
-
-.review-hero-wash__image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  background-image: url("/assets/mweb-hero-bg.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: top center;
 }
 
 .review-hero-wash__fade {
@@ -191,8 +219,16 @@ body {
   border-radius: var(--radiusFull);
 }
 
+.members-self-required {
+  pointer-events: none;
+}
+
 .members-child-row {
   border-top: var(--borderHairline) solid var(--borderSoft);
+}
+
+.members-keep-in-mind.acko-alert {
+  border-radius: 0;
 }
 
 /* Child age field — opens Drawer; mirrors Dropdown shell tokens */
@@ -302,24 +338,11 @@ body {
 }
 
 .members-age-sheet-title {
-  margin: 0;
   padding: 0 var(--spacing20) var(--spacing12);
-  color: var(--textPrimary);
-  font-family: var(--typefaceFamily);
-  font-size: var(--fontBodyLgSize);
-  font-weight: var(--fontHeadingSmWeight);
-  letter-spacing: var(--fontBodyLgSpacing);
-  line-height: var(--fontBodyLgLine);
 }
 
 .members-age-sheet-desc {
-  margin: 0;
   padding: 0 var(--spacing20) var(--spacing12);
-  color: var(--textSecondary);
-  font-family: var(--typefaceFamily);
-  font-size: var(--fontBodySmSize);
-  font-weight: var(--fontBodySmWeight);
-  line-height: var(--fontBodySmLine);
 }
 
 /* ui-polish.md — sticky bottom CTA + safe area */

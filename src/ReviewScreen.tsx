@@ -87,7 +87,7 @@ function PolicyReviewCard({
       <div className="review-card-strip flex items-center justify-between gap-12 px-16 pt-16 pb-12">
         <div className="flex items-center gap-8 min-w-0">
           {icon}
-          <Typography variant="label-lg" color="primary">
+          <Typography scale="sm" emphasis="medium" color="primary">
             {title}
           </Typography>
         </div>
@@ -124,7 +124,7 @@ function CouponCommerceCard({
           <Icon24>
             <DiscountOfferSave />
           </Icon24>
-          <Typography variant="label-lg" color="primary">
+          <Typography scale="sm" emphasis="medium" color="primary">
             Apply coupon
           </Typography>
         </div>
@@ -166,7 +166,8 @@ function CouponCommerceCard({
                 <div className="flex flex-col gap-4 flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-12">
                     <Typography
-                      variant="label-lg"
+                      scale="sm"
+                      emphasis="medium"
                       color="primary"
                       className="flex-1"
                     >
@@ -176,7 +177,7 @@ function CouponCommerceCard({
                       Apply
                     </Button>
                   </div>
-                  <Typography variant="caption" color="secondary">
+                  <Typography scale="xs" color="secondary">
                     {coupon.description}
                   </Typography>
                 </div>
@@ -199,7 +200,7 @@ function PremiumBreakupCard() {
           <Icon24>
             <Money />
           </Icon24>
-          <Typography variant="label-lg" color="primary">
+          <Typography scale="sm" emphasis="medium" color="primary">
             Premium break-up
           </Typography>
         </div>
@@ -215,10 +216,10 @@ function PremiumBreakupCard() {
               key={row.label}
               className="flex items-center justify-between gap-16 w-full"
             >
-              <Typography variant="body-sm" color="secondary">
+              <Typography scale="sm" color="secondary">
                 {row.label}
               </Typography>
-              <Typography variant="body-sm" color="secondary">
+              <Typography scale="sm" color="secondary">
                 {row.amount}
               </Typography>
             </div>
@@ -228,10 +229,10 @@ function PremiumBreakupCard() {
         <Separator />
 
         <div className="flex items-center justify-between gap-16 w-full">
-          <Typography variant="body-md" weight="semibold">
+          <Typography scale="base" emphasis="bold">
             Total
           </Typography>
-          <Typography variant="body-md" weight="semibold">
+          <Typography scale="base" emphasis="bold">
             {TOTAL_PREMIUM}
           </Typography>
         </div>
@@ -253,13 +254,6 @@ export default function ReviewScreen() {
       <div className="relative mx-auto w-full max-w-[360px] min-h-screen flex flex-col bg-[var(--surfaceBase)]">
         {/* Figma mWeb hero BG — soft pink/lavender glow (exported asset) */}
         <div className="review-hero-wash" aria-hidden="true">
-          <img
-            className="review-hero-wash__image"
-            src="/assets/mweb-hero-bg.svg"
-            alt=""
-            width={359}
-            height={207}
-          />
           <div className="review-hero-wash__fade" />
         </div>
 
@@ -280,7 +274,7 @@ export default function ReviewScreen() {
 
               <div className="flex items-center gap-12 min-w-0">
                 <Avatar
-                  src="/assets/avatar-aparna.png"
+                  src={`${import.meta.env.BASE_URL}assets/avatar-aparna.png`}
                   alt="Aparna"
                   initials="A"
                   gender="female"
@@ -288,7 +282,7 @@ export default function ReviewScreen() {
                   status="online"
                 />
                 {/* Figma: Bold 14/20 */}
-                <Typography variant="label-lg" weight="bold" color="primary">
+                <Typography scale="sm" emphasis="bold" color="primary">
                   Aparna
                 </Typography>
               </div>
@@ -310,7 +304,7 @@ export default function ReviewScreen() {
 
         <main className="relative z-10 flex-1 section-container flex flex-col gap-16 pt-24 pb-120">
           {/* Figma: Semibold 24px — heading-lg */}
-          <Typography variant="heading-lg" as="h1">
+          <Typography scale="2xl" emphasis="bold" as="h1">
             All set! You can review your policy details and premium
           </Typography>
 
@@ -326,11 +320,11 @@ export default function ReviewScreen() {
             >
               <div className="flex flex-col gap-4">
                 {/* Figma: Medium 14px Neutral/N500 */}
-                <Typography variant="label-lg" color="secondary">
+                <Typography scale="sm" emphasis="medium" color="secondary">
                   MH 04 EQ 4392
                 </Typography>
                 {/* Figma: Regular 14px secondary */}
-                <Typography variant="body-sm" color="secondary">
+                <Typography scale="sm" color="secondary">
                   Maruti Swift Dzire • Petrol • 2010
                 </Typography>
               </div>
@@ -345,7 +339,7 @@ export default function ReviewScreen() {
               }
               title="Coverage details"
             >
-              <Typography variant="body-sm" color="primary">
+              <Typography scale="sm" color="primary">
                 Zero depreciation Platinum plan (₹8.5 lakh IDV) with 3 additional
                 covers
               </Typography>
@@ -361,9 +355,9 @@ export default function ReviewScreen() {
               title="Policy start date"
               showChevron={false}
             >
-              <Typography variant="body-sm" color="secondary">
+              <Typography scale="sm" color="secondary">
                 Starts on{" "}
-                <Typography variant="label-lg" color="primary" as="span">
+                <Typography scale="sm" emphasis="medium" color="primary" as="span">
                   24 May 2024
                 </Typography>{" "}
                 at 12 AM

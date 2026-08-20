@@ -8,6 +8,7 @@ import { ArrowRight, Info, Minus, Plus } from "@acko/icons";
 import { PurchaseFlowChrome } from "./PurchaseFlowChrome";
 import {
   DEFAULT_COVERED_SELECTION,
+  withRequiredSelf,
   type CoveredSelection,
   type MemberKey,
 } from "./memberTypes";
@@ -18,7 +19,6 @@ import {
  */
 
 const IMMEDIATE_FAMILY: { key: MemberKey; label: string }[] = [
-  { key: "self", label: "Self" },
   { key: "spouse", label: "Spouse" },
 ];
 
@@ -56,8 +56,8 @@ function ChildStepper({
       </Button>
       <div className="flex w-40 shrink-0 items-center justify-center">
         <Typography
-          variant="body-md"
-          weight="semibold"
+          scale="base"
+          emphasis="bold"
           color="primary"
           align="center"
           className="tabular-nums leading-none"
@@ -90,7 +90,7 @@ function MemberGroup({
 }) {
   return (
     <div className="flex w-full flex-col gap-12">
-      <Typography variant="body-md" color="primary">
+      <Typography scale="base" emphasis="medium" color="primary">
         {title}
       </Typography>
       <Card variant="primary" className="w-full overflow-hidden">
@@ -109,18 +109,22 @@ export default function MembersCoveredScreen({
   onBack?: () => void;
   initialSelection?: CoveredSelection;
 }) {
-  const [selected, setSelected] = useState<Record<MemberKey, boolean>>(
-    initialSelection.members,
-  );
+  const [selected, setSelected] = useState<Record<MemberKey, boolean>>({
+    ...initialSelection.members,
+    self: true,
+  });
   const [childCount, setChildCount] = useState(initialSelection.childCount);
 
   const toggle = (key: MemberKey) => (next: boolean) => {
+    if (key === "self") return;
     setSelected((prev) => ({ ...prev, [key]: next }));
   };
 
   const handleContinue = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onContinue?.({ members: selected, childCount });
+    onContinue?.(
+      withRequiredSelf({ members: { ...selected, self: true }, childCount }),
+    );
   };
 
   return (
@@ -130,12 +134,18 @@ export default function MembersCoveredScreen({
         onSubmit={handleContinue}
       >
         <main className="section-container flex flex-1 flex-col gap-40 pb-24 pt-32">
-          <Typography variant="heading-xl" as="h1">
+          <Typography scale="2xl" emphasis="bold" as="h1">
             Select the members you would like to cover
           </Typography>
 
           <div className="flex w-full flex-col gap-32">
             <MemberGroup title="Immediate family">
+              <CheckboxRow
+                label="Self"
+                checked
+                onChange={() => undefined}
+                className="members-self-required"
+              />
               {IMMEDIATE_FAMILY.map((member) => (
                 <CheckboxRow
                   key={member.key}
@@ -147,7 +157,8 @@ export default function MembersCoveredScreen({
 
               <div className="members-child-row flex w-full items-center gap-12 py-16">
                 <Typography
-                  variant="label-lg"
+                  scale="sm"
+                  emphasis="medium"
                   color="primary"
                   className="min-w-0 flex-1"
                 >
@@ -188,7 +199,7 @@ export default function MembersCoveredScreen({
                 <Info />
               </span>
             }
-            className="rounded-none"
+            className="members-keep-in-mind rounded-none"
           >
             Every family member’s premium is calculated based on their age and
             health status

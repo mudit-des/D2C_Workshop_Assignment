@@ -17,13 +17,6 @@ export function PurchaseFlowChrome({
     <div className="min-h-screen bg-[var(--surfaceBase)]">
       <div className="members-flow-column relative mx-auto flex min-h-screen w-full flex-col bg-[var(--surfaceBase)]">
         <div className="members-hero-wash" aria-hidden="true">
-          <img
-            className="members-hero-wash__image"
-            src="/assets/mweb-hero-bg.svg"
-            alt=""
-            width={359}
-            height={207}
-          />
           <div className="members-hero-wash__fade" />
         </div>
 

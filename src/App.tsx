@@ -3,6 +3,7 @@ import MembersCoveredScreen from "./MembersCoveredScreen";
 import MemberAgesScreen, { type MemberAges } from "./MemberAgesScreen";
 import {
   DEFAULT_COVERED_SELECTION,
+  withRequiredSelf,
   type CoveredSelection,
 } from "./memberTypes";
 
@@ -34,7 +35,7 @@ function App() {
     <MembersCoveredScreen
       initialSelection={selection}
       onContinue={(next) => {
-        setSelection(next);
+        setSelection(withRequiredSelf(next));
         // Drop stale ages when the covered set changes
         setAges(null);
         setStep("ages");

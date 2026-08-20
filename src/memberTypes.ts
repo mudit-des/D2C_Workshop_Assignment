@@ -20,8 +20,8 @@ export const MEMBER_LABELS: Record<MemberKey, string> = {
   motherInLaw: "Mother-in-law",
 };
 
-/** Elders that must be at least as old as Self */
-export const ELDER_KEYS_VS_SELF: MemberKey[] = ["father", "mother"];
+/** Parents Self cannot be older than */
+export const PARENT_KEYS_VS_SELF: MemberKey[] = ["father", "mother"];
 
 export const DEFAULT_COVERED_SELECTION: CoveredSelection = {
   members: {
@@ -34,3 +34,23 @@ export const DEFAULT_COVERED_SELECTION: CoveredSelection = {
   },
   childCount: 0,
 };
+
+export class SelfRequiredError extends Error {
+  constructor() {
+    super("A policy cannot be issued without covering Self");
+    this.name = "SelfRequiredError";
+  }
+}
+
+/** Self is always covered — there is no policy without the proposer. */
+export function withRequiredSelf(
+  selection: CoveredSelection,
+): CoveredSelection {
+  if (!selection.members.self) {
+    throw new SelfRequiredError();
+  }
+  return {
+    ...selection,
+    members: { ...selection.members, self: true },
+  };
+}
