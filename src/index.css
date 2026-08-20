@@ -103,6 +103,12 @@ body {
   }
 }
 
+/* Desktop purchase journey: contextual left navigation, mobile chrome stays compact. */
+.members-flow-desktop-header,
+.members-flow-sidebar {
+  display: none;
+}
+
 /* Repair control borders so ACKO Checkbox / CheckboxRow render correctly */
 .acko-checkbox-box,
 .acko-cb-row .acko-checkbox-box {
@@ -248,6 +254,69 @@ body {
  */
 .members-flow-column {
   max-width: var(--members-flow-max-width);
+}
+
+@media (min-width: 1024px) {
+  .members-flow-desktop-header {
+    display: flex !important;
+    align-items: center;
+    min-height: 56px;
+    padding-inline: 40px;
+    border-bottom: var(--borderHairline) solid var(--borderSoft);
+    background-color: var(--surfaceBase);
+  }
+
+  .members-flow-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(0, 4fr);
+    min-height: calc(100vh - 56px);
+  }
+
+  .members-flow-sidebar {
+    display: block;
+    padding: 48px 24px 24px 40px;
+    border-right: var(--borderHairline) solid var(--borderSoft);
+    background-color: var(--surfaceBase);
+  }
+
+  .members-journey-step {
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: var(--radiusLg);
+  }
+
+  .members-journey-step-current {
+    background-color: var(--fillBrandSubtle);
+  }
+
+  .members-journey-step-marker {
+    border-radius: var(--radiusFull);
+    background-color: var(--surfaceRaised);
+    color: var(--textSecondary);
+  }
+
+  .members-journey-step-current .members-journey-step-marker {
+    background-color: var(--fillBrand);
+    color: var(--textStaticLight);
+  }
+
+  .members-journey-step:nth-child(-n + 2) .members-journey-step-marker {
+    background-color: var(--fillBrandSubtle);
+    color: var(--textBrand);
+  }
+
+  .members-journey-step-marker svg {
+    width: var(--spacing12);
+    height: var(--spacing12);
+  }
+
+  .members-flow-mobile-header {
+    display: none;
+  }
+
+  .members-hero-wash {
+    display: none;
+  }
 }
 
 /*
