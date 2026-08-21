@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Typography } from "@acko/typography";
 import { Button } from "@acko/button";
+import { Dialog } from "@acko/dialog";
 import { Drawer } from "@acko/drawer";
 import { ChevronDown, Tick } from "@acko/icons";
 import { PurchaseFlowChrome } from "./PurchaseFlowChrome";
@@ -12,9 +13,10 @@ import {
 } from "./memberTypes";
 
 /**
- * How old is everyone? + age bottom sheets
+ * How old is everyone? + age pickers
+ * Mobile: bottom sheets. Desktop (≥1024px): centered Dialog with close.
  * Adult sheet title: "Enter age"
- * Child sheet: "Select age range" + coverage copy (Figma)
+ * Child sheet: "Select age range"; desktop dialog title: "Child age"
  * No header divider / close icon — titles live in the sheet body.
  *
  * Drawer always mounts a header (with divider + X) when dismissible is true,
@@ -104,6 +106,21 @@ function useAgeSheetMotion(open: boolean, onClose: () => void) {
     .join(" ");
 
   return { drawerOpen: mounted, className };
+}
+
+function useDesktopAgePicker() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia("(min-width: 1024px)").matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsDesktop(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return isDesktop;
 }
 
 const ADULT_MIN_AGE = 18;
@@ -367,7 +384,7 @@ function AgeFieldTrigger({
   );
 }
 
-/** Adult ages — title "Enter age", numeric list, no header chrome */
+/** Adult ages — bottom sheet on mobile, centered dialog on desktop */
 function EnterAgeDrawer({
   open,
   value,
@@ -387,7 +404,59 @@ function EnterAgeDrawer({
     () => adultAgeOptions(minAge, maxAge),
     [minAge, maxAge],
   );
+  const isDesktop = useDesktopAgePicker();
   const { drawerOpen, className } = useAgeSheetMotion(open, onClose);
+
+  const list = (
+    <div className="flex w-full flex-col" role="listbox" aria-label="Enter age">
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            className="members-age-option flex w-full items-center justify-between gap-12 bg-transparent px-20 py-16 text-left"
+            onClick={() => {
+              onSelect(option.value);
+              onClose();
+            }}
+          >
+            <Typography
+              scale="base"
+              color={selected ? "brand" : "primary"}
+              className="min-w-0 flex-1"
+            >
+              {option.label}
+            </Typography>
+            {selected ? (
+              <span
+                className="size-24 shrink-0 text-[var(--fillBrand)]"
+                aria-hidden="true"
+              >
+                <Tick />
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        title="Enter age"
+        size="md"
+        className="members-age-dialog"
+      >
+        {list}
+      </Dialog>
+    );
+  }
 
   return (
     <Drawer
@@ -403,45 +472,12 @@ function EnterAgeDrawer({
       <Typography scale="lg" emphasis="bold" as="h2" className="members-age-sheet-title">
         Enter age
       </Typography>
-      <div className="flex w-full flex-col" role="listbox" aria-label="Enter age">
-        {options.map((option) => {
-          const selected = value === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="option"
-              aria-selected={selected}
-              className="flex w-full items-center justify-between gap-12 bg-transparent px-20 py-16 text-left"
-              onClick={() => {
-                onSelect(option.value);
-                onClose();
-              }}
-            >
-              <Typography
-                scale="base"
-                color={selected ? "brand" : "primary"}
-                className="min-w-0 flex-1"
-              >
-                {option.label}
-              </Typography>
-              {selected ? (
-                <span
-                  className="size-24 shrink-0 text-[var(--fillBrand)]"
-                  aria-hidden="true"
-                >
-                  <Tick />
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+      {list}
     </Drawer>
   );
 }
 
-/** Child ages — Figma copy, no header chrome */
+/** Child ages — bottom sheet on mobile, centered dialog on desktop */
 function SelectAgeRangeDrawer({
   open,
   value,
@@ -455,10 +491,75 @@ function SelectAgeRangeDrawer({
   onClose: () => void;
   onSelect: (next: ChildAgeValue) => void;
 }) {
+  const isDesktop = useDesktopAgePicker();
   const { drawerOpen, className } = useAgeSheetMotion(open, onClose);
   const options = CHILD_AGE_RANGES.filter((option) =>
     isChildRangeAllowed(option.value, maxAgeYears),
   );
+
+  const list = (
+    <div
+      className="flex w-full flex-col"
+      role="listbox"
+      aria-label="Child age range"
+    >
+      {options.length === 0 ? (
+        <Typography scale="sm" color="error" className="px-20 py-16">
+          No valid child age range. A child cannot be older than Self, Spouse,
+          Father, or Mother.
+        </Typography>
+      ) : null}
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            className="members-age-option flex w-full items-center justify-between gap-12 bg-transparent px-20 py-16 text-left"
+            onClick={() => {
+              onSelect(option.value);
+              onClose();
+            }}
+          >
+            <Typography
+              scale="sm"
+              emphasis="medium"
+              color={selected ? "brand" : "primary"}
+              className="min-w-0 flex-1"
+            >
+              {option.label}
+            </Typography>
+            {selected ? (
+              <span
+                className="size-24 shrink-0 text-[var(--fillBrand)]"
+                aria-hidden="true"
+              >
+                <Tick />
+              </span>
+            ) : (
+              <span className="size-24 shrink-0" aria-hidden="true" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        title="Child age"
+        size="sm"
+        className="members-age-dialog"
+      >
+        {list}
+      </Dialog>
+    );
+  }
 
   return (
     <Drawer
@@ -481,53 +582,7 @@ function SelectAgeRangeDrawer({
       >
         We cover children aged 3 months and above
       </Typography>
-      <div
-        className="flex w-full flex-col"
-        role="listbox"
-        aria-label="Child age range"
-      >
-        {options.length === 0 ? (
-          <Typography scale="sm" color="error" className="px-20 py-16">
-            No valid child age range. A child cannot be older than Self, Spouse,
-            Father, or Mother.
-          </Typography>
-        ) : null}
-        {options.map((option) => {
-          const selected = value === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="option"
-              aria-selected={selected}
-              className="flex w-full items-center justify-between gap-12 bg-transparent px-20 py-16 text-left"
-              onClick={() => {
-                onSelect(option.value);
-                onClose();
-              }}
-            >
-              <Typography
-                scale="sm"
-                emphasis="medium"
-                color={selected ? "brand" : "primary"}
-                className="min-w-0 flex-1"
-              >
-                {option.label}
-              </Typography>
-              {selected ? (
-                <span
-                  className="size-24 shrink-0 text-[var(--fillBrand)]"
-                  aria-hidden="true"
-                >
-                  <Tick />
-                </span>
-              ) : (
-                <span className="size-24 shrink-0" aria-hidden="true" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {list}
     </Drawer>
   );
 }

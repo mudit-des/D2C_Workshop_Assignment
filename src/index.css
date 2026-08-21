@@ -12,6 +12,7 @@
 @import "@acko/css/calendar.css";
 @import "@acko/css/card.css";
 @import "@acko/css/checkbox.css";
+@import "@acko/css/dialog.css";
 @import "@acko/css/drawer.css";
 @import "@acko/css/dropdown.css";
 @import "@acko/css/field.css";
@@ -95,6 +96,14 @@ body {
   --checkboxBorder: var(--borderDefault);
   --checkboxBorderHover: var(--borderDefault);
   --members-flow-max-width: 480px;
+  --colorSurfaceOverlay: var(--surfaceOverlay);
+  --colorSurfaceRaised: var(--cardFillDefault);
+  --colorSurfaceRaisedHover: var(--cardFillHover);
+  --colorTextDefault: var(--textPrimary);
+  --colorTextSecondary: var(--textSecondary);
+  --colorBorderSubtle: var(--borderSubtle);
+  --shadowLg: var(--shadowL);
+  --shadowFocusRing: 0 0 0 3px var(--borderFocus);
 }
 
 @media (min-width: 768px) {
@@ -412,6 +421,74 @@ body {
 
 .members-age-sheet-desc {
   padding: 0 var(--spacing20) var(--spacing12);
+}
+
+/* Desktop age picker — centered dialog instead of bottom sheet */
+.acko-dialog-backdrop:has(.members-age-dialog) {
+  animation: members-age-dialog-backdrop-in 550ms ease-out;
+}
+
+.members-age-dialog.acko-dialog {
+  animation: members-age-dialog-in 550ms ease-out;
+  background-color: var(--cardFillDefault);
+  box-shadow: var(--shadowL);
+  color: var(--textPrimary);
+}
+
+.members-age-dialog .acko-dialog-header {
+  align-items: center;
+  padding: 20px 20px 12px;
+}
+
+.members-age-dialog .acko-dialog-title {
+  color: var(--textPrimary);
+  font-size: var(--fontHeadingSmSize);
+  font-weight: var(--fontHeadingSmWeight);
+  letter-spacing: var(--fontHeadingSmSpacing);
+  line-height: var(--fontHeadingSmLine);
+}
+
+.members-age-dialog .acko-dialog-close {
+  color: var(--textSecondary);
+}
+
+.members-age-dialog .acko-dialog-close:focus-visible {
+  box-shadow: 0 0 0 3px var(--borderFocus);
+}
+
+.members-age-dialog .acko-dialog-body {
+  padding: 0 0 12px;
+}
+
+.members-age-dialog .members-age-option + .members-age-option {
+  border-top: var(--borderHairline) dashed var(--borderSoft);
+}
+
+@keyframes members-age-dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes members-age-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acko-dialog-backdrop:has(.members-age-dialog),
+  .members-age-dialog.acko-dialog {
+    animation: none;
+  }
 }
 
 /* ui-polish.md — sticky bottom CTA + safe area */
